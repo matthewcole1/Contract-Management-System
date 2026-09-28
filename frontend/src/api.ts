@@ -86,6 +86,31 @@ export async function updateContract(
   return data;
 }
 
+export async function createContract(
+  contract: Record<string, unknown>
+) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/contracts`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(contract),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || "Failed to create contract"
+    );
+  }
+
+  return data;
+}
+
 export async function getOptions() {
   const response = await fetch(`${API_BASE_URL}/api/options`);
 

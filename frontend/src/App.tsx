@@ -5,6 +5,7 @@ import {
   getContracts,
   getOptions,
   updateContract,
+  createContract,
 } from "./api";
 
 type Contract = {
@@ -94,6 +95,25 @@ function App() {
   const [editInstitutionCompanyName, setEditInstitutionCompanyName] = useState("");
   const [editInstitutionContact, setEditInstitutionContact] = useState("");
   const [editHospitalContact, setEditHospitalContact] = useState("");
+  const [editKchNumber, setEditKchNumber] = useState("");
+
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const [newKchNumber, setNewKchNumber] = useState("");
+  const [newInstitutionCompanyName, setNewInstitutionCompanyName] = useState("");
+  const [newDepartment, setNewDepartment] = useState("");
+  const [newContractType, setNewContractType] = useState("Other");
+  const [newRequestReceived, setNewRequestReceived] = useState("");
+  const [newInstitutionContact, setNewInstitutionContact] = useState("");
+  const [newHospitalContact, setNewHospitalContact] = useState("");
+  const [newContractStartDate, setNewContractStartDate] = useState("");
+  const [newContractEndDate, setNewContractEndDate] = useState("");
+  const [newContractStatus, setNewContractStatus] = useState("Request Received");
+  const [newLegalStatus, setNewLegalStatus] = useState("Not Assigned");
+  const [newAssignedAttorney, setNewAssignedAttorney] = useState("");
+  const [newContractManager, setNewContractManager] = useState("");
+  const [newDocumentLink, setNewDocumentLink] = useState("");
+  const [newNotes, setNewNotes] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -129,6 +149,282 @@ function App() {
         <h2>Contracts</h2>
 
         <p>Total contracts: {contracts.length}</p>
+
+        <button
+          type="button"
+          onClick={() => setShowCreateForm(true)}
+        >
+          Add Contract
+        </button>
+
+        {showCreateForm && (
+        <section className="create-contract-form">
+          <h2>Create Contract</h2>
+
+          <label>
+            KCH #
+            <input
+              type="text"
+              value={newKchNumber}
+              onChange={(event) =>
+                setNewKchNumber(event.target.value)
+          }
+            />
+          </label>
+
+          <label>
+          Institution / Company
+          <input
+            type="text"
+            value={newInstitutionCompanyName}
+            onChange={(event) =>
+              setNewInstitutionCompanyName(event.target.value)
+          }
+          />
+        </label>
+
+        <label>
+          Department
+          <select
+            value={newDepartment}
+            onChange={(event) =>
+              setNewDepartment(event.target.value)
+            }
+          >
+            <option value="">Select Department</option>
+
+            {options?.departments.map((department) => (
+              <option
+                key={department.id}
+                value={department.name}
+              >
+                {department.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Contract Type
+          <select
+            value={newContractType}
+            onChange={(event) =>
+              setNewContractType(event.target.value)
+            }
+          >
+            {options?.contract_types.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Request Received
+          <input
+            type="date"
+            value={newRequestReceived}
+            onChange={(event) =>
+              setNewRequestReceived(event.target.value)
+            }
+          />
+        </label>
+
+        <label>
+          Institution Contact
+          <input
+            type="text"
+            value={newInstitutionContact}
+            onChange={(event) =>
+              setNewInstitutionContact(event.target.value)
+          }
+            />
+        </label>
+
+        <label>
+          Hospital Contact
+          <input
+            type="text"
+            value={newHospitalContact}
+            onChange={(event) =>
+              setNewHospitalContact(event.target.value)
+          }
+            />
+        </label>
+
+        <label>
+          Contract Start Date
+          <input
+            type="date"
+            value={newContractStartDate}
+            onChange={(event) =>
+              setNewContractStartDate(event.target.value)
+          }
+            />
+        </label>
+
+        <label>
+          Contract End Date
+          <input
+            type="date"
+            value={newContractEndDate}
+            onChange={(event) =>
+              setNewContractEndDate(event.target.value)
+         }
+            />
+        </label>
+
+      <label>
+        Contract Status
+        <select
+          value={newContractStatus}
+          onChange={(event) =>
+            setNewContractStatus(event.target.value)
+        }
+          >
+        {options?.contract_statuses.map((status) => (
+          <option key={status} value={status}>
+            {status}
+          </option>
+        ))}
+        </select>
+      </label>
+
+    <label>
+      Legal Status
+      <select
+        value={newLegalStatus}
+        onChange={(event) =>
+          setNewLegalStatus(event.target.value)
+        }
+      >
+        {options?.legal_statuses.map((status) => (
+          <option key={status} value={status}>
+            {status}
+          </option>
+        ))}
+      </select>
+    </label>
+
+    <label>
+      Assigned Attorney
+      <input
+        type="text"
+        value={newAssignedAttorney}
+        onChange={(event) =>
+          setNewAssignedAttorney(event.target.value)
+        }
+      />
+    </label>
+
+    <label>
+      Contract Manager
+      <input
+        type="text"
+        value={newContractManager}
+        onChange={(event) =>
+         setNewContractManager(event.target.value)
+        }
+      />
+    </label>
+
+    <label>
+      Document Link
+      <input
+        type="text"
+        value={newDocumentLink}
+        onChange={(event) =>
+          setNewDocumentLink(event.target.value)
+        }
+      />
+    </label>
+
+    <label>
+      Notes
+      <textarea
+        value={newNotes}
+        onChange={(event) =>
+          setNewNotes(event.target.value)
+        }
+        rows={4}
+      />
+    </label>
+
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await createContract({
+                kch_number: newKchNumber,
+                institution_company_name: newInstitutionCompanyName,
+                department: newDepartment,
+                contract_type: newContractType,
+                request_received: newRequestReceived || null,
+                institution_contact: newInstitutionContact,
+                hospital_contact: newHospitalContact,
+                contract_start_date: newContractStartDate || null,
+                contract_end_date: newContractEndDate || null,
+                contract_status: newContractStatus,
+                legal_status: newLegalStatus,
+                assigned_attorney: newAssignedAttorney,
+                contract_manager: newContractManager,
+                document_link: newDocumentLink,
+                notes: newNotes,
+              });
+
+              setNewKchNumber("");
+              setNewInstitutionCompanyName("");
+              setNewDepartment("");
+              setNewContractType("Other");
+              setShowCreateForm(false);
+              setNewRequestReceived("");
+              setNewInstitutionContact("");
+              setNewHospitalContact("");
+              setNewContractStartDate("");
+              setNewContractEndDate("");
+              setNewContractStatus("Request Received");
+              setNewLegalStatus("Not Assigned");
+              setNewAssignedAttorney("");
+              setNewContractManager("");
+              setNewDocumentLink("");
+              setNewNotes("");
+
+              const refreshedContracts =
+                await getContracts({
+                  search: searchTerm,
+                  department: departmentFilter,
+                  status: statusFilter,
+                });
+
+              setContracts(
+                refreshedContracts.contracts
+              );
+            } catch (err) {
+              console.error(err);
+
+              if (err instanceof Error) {
+                setError(err.message);
+              } else {
+                setError(
+                  "Could not create contract."
+                );
+              }
+            }
+          }}
+        >
+          Create Contract
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowCreateForm(false)}
+        >
+         Cancel
+        </button>
+      </section>
+    )}
+
 
         <div className="filters">
           <label>
@@ -213,6 +509,10 @@ function App() {
 
                       setSelectedContract(
                         contractData.contract
+                      );
+
+                      setEditKchNumber(
+                        contractData.contract.kch_number
                       );
 
                       setEditLegalStatus(
@@ -304,7 +604,18 @@ function App() {
 
           <p>
             <strong>KCH #:</strong>{" "}
-            {selectedContract.kch_number}
+
+            {editMode ? (
+              <input
+                type="text"
+                value={editKchNumber}
+                onChange={(event) =>
+                  setEditKchNumber(event.target.value)
+            }
+              />
+          ) : (
+            selectedContract.kch_number
+          )}
           </p>
 
           <p>
@@ -618,6 +929,7 @@ function App() {
                 const result = await updateContract(
                 selectedContract.id,
                 {
+                  kch_number: editKchNumber,
                   legal_status: editLegalStatus,
                   contract_status: editContractStatus,
                   department: editDepartment,
@@ -666,6 +978,7 @@ function App() {
     <button
       type="button"
       onClick={() => {
+        setEditKchNumber(selectedContract.kch_number);
         setEditLegalStatus(selectedContract.legal_status);
         setEditContractStatus(selectedContract.contract_status);
         setEditAssignedAttorney(selectedContract.assigned_attorney ?? "");
