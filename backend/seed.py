@@ -77,7 +77,6 @@ def seed_data():
                 "2026-10-01",
                 "2027-09-30",
                 "Active",
-                "Approved",
                 "Jordan Lee",
                 "Morgan Davis",
                 None,
@@ -97,7 +96,6 @@ def seed_data():
                 "2026-09-15",
                 "2026-12-31",
                 "Drafted / In Review",
-                "In Legal Review",
                 "Jordan Lee",
                 "Morgan Davis",
                 None,
@@ -117,7 +115,6 @@ def seed_data():
                 "2026-09-01",
                 "2026-10-15",
                 "Signatures in Progress",
-                "Approved",
                 "Riley Clark",
                 "Morgan Davis",
                 None,
@@ -142,7 +139,6 @@ def seed_data():
                 contract_start_date,
                 contract_end_date,
                 contract_status,
-                legal_status,
                 assigned_attorney,
                 contract_manager,
                 master_agreement_id,
@@ -151,7 +147,7 @@ def seed_data():
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             fake_contracts,
         )

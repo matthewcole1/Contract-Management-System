@@ -2,7 +2,7 @@
 Controlled values used throughout the Contract Management API.
 
 Keeping these values in one file prevents routes from hardcoding
-workflow statuses, legal statuses, contract types, and editable fields.
+workflow statuses, contract types, and editable fields.
 """
 
 # Valid contract workflow statuses.
@@ -19,22 +19,11 @@ CONTRACT_STATUSES = [
     "Canceled",
 ]
 
-# Valid legal-review statuses.
-LEGAL_STATUSES = [
-    "Not Assigned",
-    "Pending Legal Review",
-    "In Legal Review",
-    "Changes Requested",
-    "Approved",
-    "Legal Hold",
-]
-
 # Valid contract types in the current prototype.
 # We can expand this later to match the workbook exactly.
 CONTRACT_TYPES = [
     "Addendum",
     "Agreement",
-    "Master Agreement",
     "Other",
 ]
 
@@ -52,7 +41,6 @@ EDITABLE_FIELDS = [
     "contract_start_date",
     "contract_end_date",
     "contract_status",
-    "legal_status",
     "assigned_attorney",
     "contract_manager",
     "master_agreement_id",

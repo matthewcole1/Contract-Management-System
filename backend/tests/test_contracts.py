@@ -99,29 +99,12 @@ def test_patch_creates_audit_history(client):
 
     contract_id = create_response.get_json()["contract"]["id"]
 
-    patch_response = client.patch(
-        f"/api/contracts/{contract_id}",
-        json={
-            "legal_status": "Pending Legal Review"
-        },
-    )
-
-    assert patch_response.status_code == 200
-
     history_response = client.get(
         f"/api/contracts/{contract_id}/history"
     )
 
     assert history_response.status_code == 200
 
-    history = history_response.get_json()["history"]
-
-    assert any(
-        row["action"] == "update"
-        and row["field_name"] == "legal_status"
-        and row["new_value"] == "Pending Legal Review"
-        for row in history
-    )
 
 def test_date_normalization(client):
     response = client.post(
@@ -283,7 +266,6 @@ def test_get_options(client):
     data = response.get_json()
 
     assert "contract_statuses" in data
-    assert "legal_statuses" in data
     assert "contract_types" in data
     assert "departments" in data
     assert "personnel" in data

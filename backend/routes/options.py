@@ -2,7 +2,6 @@ from flask import Blueprint
 
 from constants import (
     CONTRACT_STATUSES,
-    LEGAL_STATUSES,
     CONTRACT_TYPES,
 )
 
@@ -24,7 +23,6 @@ def get_options():
 
     React can call this once and use the response for:
     - contract status dropdowns
-    - legal status dropdowns
     - contract type dropdowns
     - department dropdowns
     - personnel dropdowns
@@ -70,7 +68,6 @@ def get_options():
 
     return {
         "contract_statuses": CONTRACT_STATUSES,
-        "legal_statuses": LEGAL_STATUSES,
         "contract_types": CONTRACT_TYPES,
         "departments": departments,
         "personnel": personnel,

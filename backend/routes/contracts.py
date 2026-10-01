@@ -12,7 +12,6 @@ from flask import Blueprint, request
 
 from constants import (
     CONTRACT_STATUSES,
-    LEGAL_STATUSES,
     CONTRACT_TYPES,
     EDITABLE_FIELDS,
 )
@@ -308,11 +307,6 @@ def create_contract():
         "Request Received"
     )
 
-    legal_status = data.get(
-        "legal_status",
-        "Not Assigned"
-    )
-
     contract_type = data.get(
         "contract_type",
         "Other"
@@ -322,11 +316,6 @@ def create_contract():
     if contract_status not in CONTRACT_STATUSES:
         return {
             "error": "Invalid contract status"
-        }, 400
-
-    if legal_status not in LEGAL_STATUSES:
-        return {
-            "error": "Invalid legal status"
         }, 400
 
     if contract_type not in CONTRACT_TYPES:
@@ -355,7 +344,6 @@ def create_contract():
                 contract_start_date,
                 contract_end_date,
                 contract_status,
-                legal_status,
                 assigned_attorney,
                 contract_manager,
                 master_agreement_id,
@@ -364,7 +352,7 @@ def create_contract():
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 data["kch_number"],
@@ -377,7 +365,6 @@ def create_contract():
                 data.get("contract_start_date"),
                 data.get("contract_end_date"),
                 contract_status,
-                legal_status,
                 data.get("assigned_attorney", ""),
                 data.get("contract_manager", ""),
                 data.get("master_agreement_id"),
@@ -633,12 +620,6 @@ def update_contract(contract_id):
                 "error": "Invalid contract status"
             }, 400
 
-    if "legal_status" in data:
-        if data["legal_status"] not in LEGAL_STATUSES:
-            return {
-                "error": "Invalid legal status"
-            }, 400
-
     if "contract_type" in data:
         if data["contract_type"] not in CONTRACT_TYPES:
             return {
@@ -668,7 +649,7 @@ def update_contract(contract_id):
     now = datetime.now(timezone.utc).isoformat()
 
     # Build only the SET assignments needed for the changed fields.
-    # Example: "contract_status = ?, legal_status = ?"
+    # Example: "contract_status = ?
     set_clause = ", ".join(
         f"{field} = ?"
         for field in changes

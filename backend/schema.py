@@ -59,7 +59,6 @@ CREATE TABLE IF NOT EXISTS contracts (
     contract_end_date TEXT,
 
     contract_status TEXT NOT NULL DEFAULT 'Request Received',
-    legal_status TEXT NOT NULL DEFAULT 'Not Assigned',
 
     assigned_attorney TEXT,
     contract_manager TEXT,
@@ -102,9 +101,6 @@ CREATE INDEX IF NOT EXISTS idx_contracts_department
 
 CREATE INDEX IF NOT EXISTS idx_contracts_status
     ON contracts(contract_status);
-
-CREATE INDEX IF NOT EXISTS idx_contracts_legal_status
-    ON contracts(legal_status);
 
 CREATE INDEX IF NOT EXISTS idx_contracts_company
     ON contracts(institution_company_name);
