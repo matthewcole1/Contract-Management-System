@@ -1,4 +1,6 @@
+import "./App.css";
 import { useEffect, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import {
   getContract,
   getContractHistory,
@@ -6,6 +8,10 @@ import {
   getOptions,
   updateContract,
   createContract,
+  createMasterAgreement,
+  getMasterAgreements,
+  getMasterAgreement,
+  updateMasterAgreement,
 } from "./api";
 
 type Contract = {
@@ -20,7 +26,6 @@ type Contract = {
   contract_start_date: string | null;
   contract_end_date: string | null;
   contract_status: string;
-  legal_status: string;
   assigned_attorney: string | null;
   contract_manager: string | null;
   master_agreement_id: number | null;
@@ -30,9 +35,20 @@ type Contract = {
   updated_at: string;
 };
 
+type MasterAgreement = {
+  id: number;
+  agreement_number: string;
+  institution_company_name: string;
+  date: string | null;
+  end_date: string | null;
+  document_link: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type Options = {
   contract_statuses: string[];
-  legal_statuses: string[];
   contract_types: string[];
   departments: {
     id: number;
@@ -61,27 +77,34 @@ function formatDateTime(value: string | null) {
   if (!value) {
     return "—";
   }
+  const utcValue = value.includes("T")
+    ? value
+    : value.replace(" ", "T") + "Z";
 
-  return new Date(value).toLocaleString();
+  return new Date(utcValue).toLocaleString();
 }
 
 
 function App() {
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [masterAgreements, setMasterAgreements] = useState<MasterAgreement[]>([]);
   const [options, setOptions] = useState<Options | null>(null);
   const [error, setError] = useState("");
 
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [recordTypeFilter, setRecordTypeFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
   const [selectedContract, setSelectedContract] =
     useState<Contract | null>(null);
 
+  const [selectedMasterAgreement, setSelectedMasterAgreement] =
+    useState<MasterAgreement | null>(null);
+
   const [history, setHistory] = useState<AuditEntry[]>([]);
 
   const [editMode, setEditMode] = useState(false);
-  const [editLegalStatus, setEditLegalStatus] = useState("");
   const [editContractStatus, setEditContractStatus] = useState("");
   const [editAssignedAttorney, setEditAssignedAttorney] = useState("");
   const [editContractManager, setEditContractManager] = useState("");
@@ -96,8 +119,17 @@ function App() {
   const [editInstitutionContact, setEditInstitutionContact] = useState("");
   const [editHospitalContact, setEditHospitalContact] = useState("");
   const [editKchNumber, setEditKchNumber] = useState("");
+  const [editMasterAgreementId, setEditMasterAgreementId] = useState("");
+  const [editMasterMode, setEditMasterMode] = useState(false);
+  const [editAgreementNumber, setEditAgreementNumber] = useState("");
+  const [editMasterInstitution, setEditMasterInstitution] = useState("");
+  const [editAgreementDate, setEditAgreementDate] = useState("");
+  const [editMasterDocumentLink, setEditMasterDocumentLink] = useState("");
+  const [editMasterNotes, setEditMasterNotes] = useState("");
+  const [editMasterEndDate, setEditMasterEndDate] = useState("");
 
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showMasterAgreementForm, setShowMasterAgreementForm] = useState(false);
 
   const [newKchNumber, setNewKchNumber] = useState("");
   const [newInstitutionCompanyName, setNewInstitutionCompanyName] = useState("");
@@ -109,11 +141,17 @@ function App() {
   const [newContractStartDate, setNewContractStartDate] = useState("");
   const [newContractEndDate, setNewContractEndDate] = useState("");
   const [newContractStatus, setNewContractStatus] = useState("Request Received");
-  const [newLegalStatus, setNewLegalStatus] = useState("Not Assigned");
   const [newAssignedAttorney, setNewAssignedAttorney] = useState("");
   const [newContractManager, setNewContractManager] = useState("");
   const [newDocumentLink, setNewDocumentLink] = useState("");
   const [newNotes, setNewNotes] = useState("");
+  const [newMasterAgreementId, setNewMasterAgreementId] = useState("");
+  const [newAgreementNumber, setNewAgreementNumber] = useState("");
+  const [newMasterInstitution, setNewMasterInstitution] = useState("");
+  const [newAgreementDate, setNewAgreementDate] = useState("");
+  const [newMasterDocumentLink, setNewMasterDocumentLink] = useState("");
+  const [newMasterNotes, setNewMasterNotes] = useState("");
+  const [newMasterEndDate, setNewMasterEndDate] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -126,8 +164,12 @@ function App() {
 
         const optionsData = await getOptions();
 
+        const masterAgreementsData = await getMasterAgreements();
+
         setContracts(contractsData.contracts);
         setOptions(optionsData);
+        setMasterAgreements(masterAgreementsData.master_agreements
+    );
       } catch (err) {
         console.error(err);
         setError("Could not load contract data.");
@@ -137,18 +179,109 @@ function App() {
     loadData();
   }, [searchTerm, departmentFilter, statusFilter]);
 
+  const totalContracts = contracts.length;
+
+const activeContracts = contracts.filter(
+  (contract) => contract.contract_status === "Active"
+).length;
+
+const today = new Date();
+
+const sixWeeksFromNow = new Date();
+sixWeeksFromNow.setDate(today.getDate() + 42);
+
+const visibleMasterAgreements = masterAgreements.filter((agreement) => {
+  if (departmentFilter || statusFilter) {
+    return false;
+  }
+
+  if (!searchTerm.trim()) {
+    return true;
+  }
+
+  const search = searchTerm.toLowerCase();
+
+  return (
+    agreement.agreement_number
+      .toLowerCase()
+      .includes(search) ||
+    agreement.institution_company_name
+      .toLowerCase()
+      .includes(search)
+  );
+});
+
+const combinedRecords = [
+  ...contracts.map((contract) => ({
+    recordType: "Contract" as const,
+    id: contract.id,
+    number: contract.kch_number,
+    institution: contract.institution_company_name,
+    department: contract.department,
+    contractType: contract.contract_type,
+    status: contract.contract_status,
+    date: contract.contract_start_date,
+    original: contract,
+  })),
+
+  ...visibleMasterAgreements.map((agreement) => ({
+    recordType: "Master Agreement" as const,
+    id: agreement.id,
+    number: agreement.agreement_number,
+    institution: agreement.institution_company_name,
+    department: "—",
+    contractType: "Master Agreement",
+    status: "—",
+    date: agreement.date,
+    original: agreement,
+  })),
+].filter((record) => {
+  if (!recordTypeFilter) {
+    return true;
+  }
+
+  return record.recordType === recordTypeFilter;
+});
+
+const startingWithinSixWeeks = contracts.filter((contract) => {
+  if (!contract.contract_start_date) {
+    return false;
+  }
+
+  const startDate = new Date(contract.contract_start_date);
+
+  return startDate >= today && startDate <= sixWeeksFromNow;
+}).length;
+
   if (error) {
     return <p>{error}</p>;
   }
 
   return (
     <main>
+      <Toaster position="top-right" />
+
       <h1>Kings County Hospital Contract Management</h1>
 
       <section>
         <h2>Contracts</h2>
 
-        <p>Total contracts: {contracts.length}</p>
+        <div className="stats-grid">
+          <div className="stat-card total">
+            <p>Total Contracts</p>
+            <h2>{totalContracts}</h2>
+        </div>
+
+        <div className="stat-card active">
+          <p>Active</p>
+          <h2>{activeContracts}</h2>
+        </div>
+
+        <div className="stat-card starting">
+          <p>Starting Within 6 Weeks</p>
+          <h2>{startingWithinSixWeeks}</h2>
+        </div>
+    </div>
 
         <button
           type="button"
@@ -157,10 +290,19 @@ function App() {
           Add Contract
         </button>
 
+        <button
+          type="button"
+          onClick={() => setShowMasterAgreementForm(true)}
+        >
+          Add Master Agreement
+        </button>
+
         {showCreateForm && (
-        <section className="create-contract-form">
+        <div className="modal-backdrop">
+          <div className="modal contract-modal">
           <h2>Create Contract</h2>
 
+        <div className="contract-form-grid">
           <label>
             KCH #
             <input
@@ -292,22 +434,6 @@ function App() {
       </label>
 
     <label>
-      Legal Status
-      <select
-        value={newLegalStatus}
-        onChange={(event) =>
-          setNewLegalStatus(event.target.value)
-        }
-      >
-        {options?.legal_statuses.map((status) => (
-          <option key={status} value={status}>
-            {status}
-          </option>
-        ))}
-      </select>
-    </label>
-
-    <label>
       Assigned Attorney
       <input
         type="text"
@@ -341,6 +467,30 @@ function App() {
     </label>
 
     <label>
+      Master Agreement
+      <select
+        value={newMasterAgreementId}
+        onChange={(event) =>
+          setNewMasterAgreementId(event.target.value)
+        }
+      >
+       <option value="">
+            No Master Agreement
+        </option>
+
+        {masterAgreements.map((agreement) => (
+          <option
+            key={agreement.id}
+            value={agreement.id}
+          >
+            {agreement.agreement_number} —{" "}
+            {agreement.institution_company_name}
+          </option>
+        ))}
+      </select>
+    </label>
+
+    <label>
       Notes
       <textarea
         value={newNotes}
@@ -350,6 +500,10 @@ function App() {
         rows={4}
       />
     </label>
+    </div>
+  
+
+    <div className="modal-actions">
 
         <button
           type="button"
@@ -366,12 +520,14 @@ function App() {
                 contract_start_date: newContractStartDate || null,
                 contract_end_date: newContractEndDate || null,
                 contract_status: newContractStatus,
-                legal_status: newLegalStatus,
                 assigned_attorney: newAssignedAttorney,
                 contract_manager: newContractManager,
+                master_agreement_id: newMasterAgreementId ? Number(newMasterAgreementId): null,
                 document_link: newDocumentLink,
                 notes: newNotes,
               });
+
+              toast.success("Contract created successfully.");
 
               setNewKchNumber("");
               setNewInstitutionCompanyName("");
@@ -384,9 +540,9 @@ function App() {
               setNewContractStartDate("");
               setNewContractEndDate("");
               setNewContractStatus("Request Received");
-              setNewLegalStatus("Not Assigned");
               setNewAssignedAttorney("");
               setNewContractManager("");
+              setNewMasterAgreementId("");
               setNewDocumentLink("");
               setNewNotes("");
 
@@ -404,11 +560,9 @@ function App() {
               console.error(err);
 
               if (err instanceof Error) {
-                setError(err.message);
+                toast.error(err.message);
               } else {
-                setError(
-                  "Could not create contract."
-                );
+                toast.error("Something went wrong.");
               }
             }
           }}
@@ -422,9 +576,139 @@ function App() {
         >
          Cancel
         </button>
-      </section>
+      </div>
+    </div>
+  </div>  
     )}
 
+ {showMasterAgreementForm && (
+      <div className="modal-backdrop">
+      <div className="modal contract-modal">
+        <h2>Create Master Agreement</h2>
+
+      <div className="contract-form-grid">
+        <label>
+          Agreement #
+          <input
+            type="text"
+            value={newAgreementNumber}
+            onChange={(event) =>
+              setNewAgreementNumber(event.target.value)
+            }
+          />
+        </label>
+
+        <label>
+          School / Institution
+          <input
+            type="text"
+            value={newMasterInstitution}
+            onChange={(event) =>
+              setNewMasterInstitution(event.target.value)
+            }
+          />
+        </label>
+
+        <label>
+          Agreement Date
+          <input
+            type="date"
+            value={newAgreementDate}
+            onChange={(event) =>
+              setNewAgreementDate(event.target.value)
+            }
+          />
+        </label>
+
+        <label>
+          End Date
+          <input
+            type="date"
+            value={newMasterEndDate}
+            onChange={(event) =>
+              setNewMasterEndDate(event.target.value)
+            }
+            />
+        </label>
+
+        <label>
+          Document Link
+          <input
+            type="text"
+            value={newMasterDocumentLink}
+            onChange={(event) =>
+              setNewMasterDocumentLink(event.target.value)
+            }
+          />
+        </label>
+
+        <label>
+          Notes
+          <textarea
+            value={newMasterNotes}
+            onChange={(event) =>
+              setNewMasterNotes(event.target.value)
+            }
+            rows={4}
+          />
+        </label>
+      </div>
+
+      <div className="modal-actions">
+        <button
+          type="button"
+          onClick={async() => {
+          try {
+            await createMasterAgreement({
+              agreement_number: newAgreementNumber,
+              institution_company_name: newMasterInstitution,
+              date: newAgreementDate || null,
+              end_date: newMasterEndDate || null,
+              document_link: newMasterDocumentLink,
+              notes: newMasterNotes,
+            });
+
+            toast.success("Master agreement created successfully.");
+
+            const refreshedMasterAgreements =
+              await getMasterAgreements();
+
+            setMasterAgreements(
+              refreshedMasterAgreements.master_agreements
+            );
+
+            setNewAgreementNumber("");
+            setNewMasterInstitution("");
+            setNewAgreementDate("");
+            setNewMasterEndDate("");
+            setNewMasterDocumentLink("");
+            setNewMasterNotes("");
+
+            setShowMasterAgreementForm(false);
+            } catch (err) {
+            console.error(err);
+
+            if (err instanceof Error) {
+            toast.error(err.message);
+              } else {
+            toast.error("Something went wrong.");
+            }
+          }
+        }}
+        >
+          Create Master Agreement
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowMasterAgreementForm(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
         <div className="filters">
           <label>
@@ -480,126 +764,227 @@ function App() {
               ))}
             </select>
           </label>
+
+          <label>
+            Record Type
+            <select
+              value={recordTypeFilter}
+              onChange={(event) =>
+                setRecordTypeFilter(event.target.value)
+            }
+            >
+              <option value="">All Records</option>
+              <option value="Contract">Contracts</option>
+              <option value="Master Agreement">
+                Master Agreements
+              </option>
+          </select>
+        </label>
+
+          <button
+            type="button"
+            className="clear-filters-button"
+            onClick={() => {
+              setSearchTerm("");
+              setDepartmentFilter("");
+              setStatusFilter("");
+              setRecordTypeFilter("");
+            }}
+              >
+            Clear Filters
+          </button>
         </div>
 
         <div className="contract-table-wrapper">
           <table>
             <thead>
               <tr>
+                <th>Record Type</th>
                 <th>KCH #</th>
                 <th>Institution / Company</th>
                 <th>Department</th>
                 <th>Contract Type</th>
                 <th>Status</th>
-                <th>Legal Status</th>
               </tr>
             </thead>
 
             <tbody>
-              {contracts.map((contract) => (
-                <tr
-                  key={contract.id}
-                  onClick={async () => {
-                    try {
-                      const contractData =
-                        await getContract(contract.id);
-
-                      const historyData =
-                        await getContractHistory(contract.id);
-
-                      setSelectedContract(
-                        contractData.contract
-                      );
-
-                      setEditKchNumber(
-                        contractData.contract.kch_number
-                      );
-
-                      setEditLegalStatus(
-                      contractData.contract.legal_status
-                      );
-
-                      setEditContractStatus(
-                        contractData.contract.contract_status
-                      );
-
-                      setEditAssignedAttorney(
-                        contractData.contract.assigned_attorney ?? ""
-                      );
-
-                      setEditContractManager(
-                        contractData.contract.contract_manager ?? ""
-                      );
-
-                      setEditNotes(
-                        contractData.contract.notes ?? ""
-                      );
-
-                      setEditDocumentLink(
-                        contractData.contract.document_link ?? ""
-                      );
-
-                      setEditRequestReceived(
-                        contractData.contract.request_received ?? ""
-                      );
-                      
-                      setEditContractStartDate(
-                        contractData.contract.contract_start_date ?? ""
-                      );
-
-                      setEditContractEndDate(
-                        contractData.contract.contract_end_date ?? ""
-                      );
-
-                      setEditDepartment(
-                        contractData.contract.department
-                      );
-
-                      setEditContractType(
-                        contractData.contract.contract_type
-                      );
-
-                      setEditInstitutionCompanyName(
-                        contractData.contract.institution_company_name ?? ""
-                      );
-
-                      setEditInstitutionContact(
-                        contractData.contract.institution_contact ?? ""
-                      );
-
-                      setEditHospitalContact(
-                        contractData.contract.hospital_contact ?? ""
-                      );
-
-                      setHistory(
-                        historyData.history ?? []
-                      );
-                    } catch (err) {
-                      console.error(err);
-                      setError(
-                        "Could not load contract details."
-                      );
-                    }
-                  }}
+              {combinedRecords.map((record) => (
+               <tr
+                  key={`${record.recordType}-${record.id}`}
                   className="clickable-row"
+                  onClick={async () => {
+                    if (record.recordType === "Master Agreement") {
+                      try {
+                        const agreementData =
+                        await getMasterAgreement(record.id);
+
+                        setSelectedMasterAgreement(
+                          agreementData.master_agreement
+                        );
+
+                        setEditAgreementNumber(
+                          agreementData.master_agreement.agreement_number
+                        );
+
+                        setEditMasterInstitution(
+                          agreementData.master_agreement.institution_company_name
+                        );
+
+                        setEditAgreementDate(
+                          agreementData.master_agreement.date ?? ""
+                        );
+
+                        setEditMasterEndDate(
+                          agreementData.master_agreement.end_date ?? ""
+                        );
+
+                        setEditMasterDocumentLink(
+                          agreementData.master_agreement.document_link ?? ""
+                        );
+
+                        setEditMasterNotes(
+                          agreementData.master_agreement.notes ?? ""
+                        );
+
+                        setEditMasterMode(false);
+
+
+                        } catch (err) {
+                          console.error(err);
+
+                        if (err instanceof Error) {
+                          toast.error(err.message);
+                        } else {
+                          toast.error(
+                            "Could not load master agreement."
+                          );
+                        }
+                      }
+                          return;
+                }
+
+              const contract = record.original as Contract;
+
+              try {
+                const contractData =
+                await getContract(contract.id);
+
+                const historyData =
+                await getContractHistory(contract.id);
+
+                setSelectedContract(
+                  contractData.contract
+                );
+
+                setEditKchNumber(
+                  contractData.contract.kch_number
+                );
+
+                setEditMasterAgreementId(
+                  contractData.contract.master_agreement_id
+                  ? String(contractData.contract.master_agreement_id)
+                  : ""
+                );
+
+                setEditContractStatus(
+                  contractData.contract.contract_status
+                );
+
+                setEditAssignedAttorney(
+                  contractData.contract.assigned_attorney ?? ""
+                );
+
+                setEditContractManager(
+                  contractData.contract.contract_manager ?? ""
+                );
+
+                setEditNotes(
+                  contractData.contract.notes ?? ""
+                );
+
+                setEditDocumentLink(
+                  contractData.contract.document_link ?? ""
+                );
+
+                setEditRequestReceived(
+                  contractData.contract.request_received ?? ""
+                );
+
+                setEditContractStartDate(
+                  contractData.contract.contract_start_date ?? ""
+                );
+
+                setEditContractEndDate(
+                  contractData.contract.contract_end_date ?? ""
+                );
+
+                setEditDepartment(
+                  contractData.contract.department
+                );
+
+                setEditContractType(
+                  contractData.contract.contract_type
+                );
+
+                setEditInstitutionCompanyName(
+                  contractData.contract.institution_company_name ?? ""
+                );
+
+                setEditInstitutionContact(
+                  contractData.contract.institution_contact ?? ""
+                );
+
+                setEditHospitalContact(
+                  contractData.contract.hospital_contact ?? ""
+                );
+
+                setHistory(
+                  historyData.history ?? []
+                );
+              } catch (err) {
+                console.error(err);
+
+                setError(
+                 "Could not load contract details."
+              );
+             }
+          }}
+          >
+            <td>{record.recordType}</td>
+
+            <td>{record.number}</td>
+
+            <td>{record.institution}</td>
+
+            <td>{record.department}</td>
+
+            <td>{record.contractType}</td>
+
+            <td>
+              {record.recordType === "Contract" ? (
+                <span
+                 className={`status-badge status-${record.status
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")}`}
                 >
-                  <td>{contract.kch_number}</td>
-                  <td>
-                    {contract.institution_company_name}
-                  </td>
-                  <td>{contract.department}</td>
-                  <td>{contract.contract_type}</td>
-                  <td>{contract.contract_status}</td>
-                  <td>{contract.legal_status}</td>
-                </tr>
-              ))}
-            </tbody>
+                  {record.status}
+                </span>
+             ) : (
+                "—"
+              )}
+            </td>
+
+            </tr>
+          ))}
+        </tbody>
           </table>
         </div>
       </section>
 
       {selectedContract && (
-        <section className="contract-detail">
+       <div className="modal-backdrop">
+        <div className="modal contract-modal">
           <h2>Contract Details</h2>
 
           <p>
@@ -780,27 +1165,6 @@ function App() {
           </p>
 
           <p>
-            <strong>Legal Status:</strong>{" "}
-
-              {editMode ? (
-                <select
-                  value={editLegalStatus}
-                  onChange={(event) =>
-                  setEditLegalStatus(event.target.value)
-                }
-              >
-                {options?.legal_statuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              selectedContract.legal_status
-            )}
-          </p>
-
-          <p>
             <strong>Assigned Attorney:</strong>{" "}
 
               {editMode ? (
@@ -834,7 +1198,36 @@ function App() {
 
           <p>
             <strong>Master Agreement ID:</strong>{" "}
-            {selectedContract.master_agreement_id ?? "—"}
+             {editMode ? (
+              <select
+                value={editMasterAgreementId}
+                onChange={(event) =>
+                  setEditMasterAgreementId(event.target.value)
+                }
+              >
+                <option value="">
+                  No Master Agreement
+                </option>
+
+                {masterAgreements.map((agreement) => (
+                  <option
+                    key={agreement.id}
+                    value={agreement.id}
+                  >
+                    {agreement.agreement_number} —{" "}
+                    {agreement.institution_company_name}
+                  </option>
+              ))}
+              </select>
+              ) : (
+                selectedContract.master_agreement_id
+                  ? masterAgreements.find(
+                    (agreement) =>
+                      agreement.id ===
+                      selectedContract.master_agreement_id
+                  )?.agreement_number ?? "—"
+              : "—"
+            )}
           </p>
 
           <p>
@@ -930,7 +1323,6 @@ function App() {
                 selectedContract.id,
                 {
                   kch_number: editKchNumber,
-                  legal_status: editLegalStatus,
                   contract_status: editContractStatus,
                   department: editDepartment,
                   contract_type: editContractType,
@@ -939,6 +1331,7 @@ function App() {
                   institution_company_name: editInstitutionCompanyName,
                   institution_contact: editInstitutionContact,
                   hospital_contact: editHospitalContact,
+                  master_agreement_id: editMasterAgreementId ? Number(editMasterAgreementId): null,
                   document_link: editDocumentLink,
                   notes: editNotes,
                   request_received: editRequestReceived || null,
@@ -946,6 +1339,8 @@ function App() {
                   contract_end_date: editContractEndDate || null,
                 }
               );
+
+              toast.success("Contract updated successfully.");
 
               setSelectedContract(result.contract);
 
@@ -963,11 +1358,9 @@ function App() {
               console.error(err);
 
               if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError(
-                  "Could not update contract."
-                );
+                toast.error(err.message);
+              } else {
+                toast.error("Something went wrong.");
               }
             }
           }}
@@ -979,7 +1372,6 @@ function App() {
       type="button"
       onClick={() => {
         setEditKchNumber(selectedContract.kch_number);
-        setEditLegalStatus(selectedContract.legal_status);
         setEditContractStatus(selectedContract.contract_status);
         setEditAssignedAttorney(selectedContract.assigned_attorney ?? "");
         setEditContractManager(selectedContract.contract_manager ?? "");
@@ -993,6 +1385,7 @@ function App() {
         setEditInstitutionCompanyName(selectedContract.institution_company_name);
         setEditInstitutionContact(selectedContract.institution_contact ?? "");
         setEditHospitalContact(selectedContract.hospital_contact ?? "");
+        setEditMasterAgreementId(selectedContract.master_agreement_id ? String(selectedContract.master_agreement_id): "");
 
         setEditMode(false);
       }}
@@ -1011,18 +1404,239 @@ function App() {
           >
             Close
           </button>
-        </section>
+        </div>
+    </div>
+    )}
+
+    {selectedMasterAgreement && (
+  <div className="modal-backdrop">
+    <div className="modal contract-modal">
+      <h2>Master Agreement Details</h2>
+
+      <p>
+        <strong>Agreement #:</strong>{" "}
+        {editMasterMode ? (
+          <input
+            type="text"
+            value={editAgreementNumber}
+            onChange={(event) =>
+              setEditAgreementNumber(event.target.value)
+            }
+          />
+        ) : (
+          selectedMasterAgreement.agreement_number
+        )}
+      </p>
+
+      <p>
+        <strong>School / Institution:</strong>{" "}
+        {editMasterMode ? (
+          <input
+            type="text"
+            value={editMasterInstitution}
+            onChange={(event) =>
+              setEditMasterInstitution(event.target.value)
+            }
+          />
+        ) : (
+          selectedMasterAgreement.institution_company_name
+        )}
+      </p>
+
+      <p>
+        <strong>Agreement Date:</strong>{" "}
+        {editMasterMode ? (
+          <input
+            type="date"
+            value={editAgreementDate}
+            onChange={(event) =>
+              setEditAgreementDate(event.target.value)
+            }
+          />
+        ) : (
+          selectedMasterAgreement.date || "—"
+        )}
+      </p>
+
+        <p>
+          <strong>End Date:</strong>{" "}
+
+          {editMasterMode ? (
+            <input
+              type="date"
+              value={editMasterEndDate}
+              onChange={(event) =>
+                setEditMasterEndDate(event.target.value)
+              }
+              />
+          ) : (
+            selectedMasterAgreement.end_date || "—"
+            )}
+      </p>
+
+      <p>
+        <strong>Document Link:</strong>{" "}
+        {editMasterMode ? (
+          <input
+            type="text"
+            value={editMasterDocumentLink}
+            onChange={(event) =>
+              setEditMasterDocumentLink(event.target.value)
+            }
+          />
+        ) : selectedMasterAgreement.document_link ? (
+          <a
+            href={selectedMasterAgreement.document_link}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open
+          </a>
+        ) : (
+          "—"
+        )}
+      </p>
+
+      <p>
+        <strong>Notes:</strong>
+      </p>
+
+      {editMasterMode ? (
+        <textarea
+          value={editMasterNotes}
+          onChange={(event) =>
+            setEditMasterNotes(event.target.value)
+          }
+          rows={4}
+        />
+      ) : (
+        <p>{selectedMasterAgreement.notes || "—"}</p>
       )}
 
-      <section>
-        <h2>Available Contract Types</h2>
+      <p>
+        <strong>Created At:</strong>{" "}
+        {formatDateTime(
+          selectedMasterAgreement.created_at
+        )}
+      </p>
 
-        <ul>
-          {options?.contract_types.map((type) => (
-            <li key={type}>{type}</li>
-          ))}
-        </ul>
-      </section>
+      <p>
+        <strong>Updated At:</strong>{" "}
+        {formatDateTime(
+          selectedMasterAgreement.updated_at
+        )}
+      </p>
+
+      {!editMasterMode ? (
+        <button
+          type="button"
+          onClick={() => setEditMasterMode(true)}
+        >
+          Edit Master Agreement
+        </button>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const result =
+                  await updateMasterAgreement(
+                    selectedMasterAgreement.id,
+                    {
+                      agreement_number:
+                        editAgreementNumber,
+                      institution_company_name:
+                        editMasterInstitution,
+                      date:
+                        editAgreementDate || null,
+                      document_link:
+                        editMasterDocumentLink,
+                      notes:
+                        editMasterNotes,
+                    }
+                  );
+
+                toast.success(
+                  "Master agreement updated successfully."
+                );
+
+                setSelectedMasterAgreement(
+                  result.master_agreement
+                );
+
+                const refreshedMasterAgreements =
+                  await getMasterAgreements();
+
+                setMasterAgreements(
+                  refreshedMasterAgreements.master_agreements
+                );
+
+                setEditMasterMode(false);
+              } catch (err) {
+                console.error(err);
+
+                if (err instanceof Error) {
+                  toast.error(err.message);
+                } else {
+                  toast.error(
+                    "Something went wrong."
+                  );
+                }
+              }
+            }}
+          >
+            Save Changes
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEditAgreementNumber(
+                selectedMasterAgreement.agreement_number
+              );
+
+              setEditMasterInstitution(
+                selectedMasterAgreement.institution_company_name
+              );
+
+              setEditAgreementDate(
+                selectedMasterAgreement.date ?? ""
+              );
+
+              setEditMasterEndDate(
+                selectedMasterAgreement.end_date ?? ""
+              );
+
+              setEditMasterDocumentLink(
+                selectedMasterAgreement.document_link ?? ""
+              );
+
+              setEditMasterNotes(
+                selectedMasterAgreement.notes ?? ""
+              );
+
+              setEditMasterMode(false);
+            }}
+          >
+            Cancel
+          </button>
+        </>
+      )}
+
+      <button
+        type="button"
+        onClick={() => {
+          setSelectedMasterAgreement(null);
+          setEditMasterMode(false);
+        }}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
     </main>
   );
 }

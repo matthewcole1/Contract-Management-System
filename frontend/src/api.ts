@@ -111,6 +111,87 @@ export async function createContract(
   return data;
 }
 
+export async function createMasterAgreement(
+  agreement: Record<string, unknown>
+) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/master-agreements`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(agreement),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || "Failed to create master agreement"
+    );
+  }
+
+  return data;
+}
+
+export async function getMasterAgreements() {
+  const response = await fetch(
+    `${API_BASE_URL}/api/master-agreements`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to load master agreements");
+  }
+
+  return response.json();
+}
+
+export async function getMasterAgreement(
+  agreementId: number
+) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/master-agreements/${agreementId}`
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || "Failed to load master agreement"
+    );
+  }
+
+  return data;
+}
+
+export async function updateMasterAgreement(
+  agreementId: number,
+  updates: Record<string, unknown>
+) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/master-agreements/${agreementId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || "Failed to update master agreement"
+    );
+  }
+
+  return data;
+}
+
 export async function getOptions() {
   const response = await fetch(`${API_BASE_URL}/api/options`);
 
