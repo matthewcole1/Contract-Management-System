@@ -49,14 +49,6 @@ Do not load real hospital contract data until hosting, authentication, security,
 - Debounced contract search
 - Toast notifications for create/update results
 
-## Controlled Values
-
-Contract statuses are controlled values.
-
-Contract types are controlled values.
-
-Legal status is no longer used by the application and should not be reintroduced.
-
 ## Project Structure
 
 ```text
