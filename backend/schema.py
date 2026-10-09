@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS master_agreements (
     agreement_number TEXT UNIQUE,
     institution_company_name TEXT NOT NULL,
     date TEXT,
+    end_date TEXT,
     document_link TEXT,
     notes TEXT,
     created_at TEXT NOT NULL,
