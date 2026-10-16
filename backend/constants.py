@@ -24,6 +24,7 @@ CONTRACT_STATUSES = [
 CONTRACT_TYPES = [
     "Addendum",
     "Agreement",
+    "Agreement Extension",
     "Other",
 ]
 
