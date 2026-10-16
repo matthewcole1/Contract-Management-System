@@ -21,6 +21,11 @@ import CreateMasterAgreementModal from "./components/CreateMasterAgreementModal"
 import MasterAgreementDetailsModal from "./components/MasterAgreementDetailsModal";
 import CreateContractModal from "./components/CreateContractModal";
 import ContractDetailsModal from "./components/ContractDetailsModal";
+import Sidebar from "./components/Sidebar";
+import ContractBoard from "./components/ContractBoard";
+import ContractCalendar from "./components/ContractCalendar";
+import UpcomingContracts from "./components/UpcomingContracts";
+import ReportsPanel from "./components/ReportsPanel";
 
 import type {
   Contract,
@@ -104,6 +109,9 @@ function App() {
   const [isSavingContract, setIsSavingContract] = useState(false);
   const [isSavingMasterAgreement, setIsSavingMasterAgreement] = useState(false);
   const [isLoadingRecords, setIsLoadingRecords] = useState(true);
+
+  const [recordView, setRecordView] = useState< "table" | "board" | "calendar" >("table");
+  const [activeSection, setActiveSection] = useState<"overview" | "records" | "reports">("records");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -648,6 +656,31 @@ async function handleOpenContract(record: RecordRow) {
   }
 }
 
+async function handleBoardStatusChange(
+  contract: Contract,
+  newStatus: string
+) {
+  try {
+    await updateContract(contract.id, {
+      contract_status: newStatus,
+    });
+
+    setContracts((currentContracts) =>
+      currentContracts.map((item) =>
+        item.id === contract.id
+          ? {
+              ...item,
+              contract_status: newStatus,
+            }
+          : item
+      )
+    );
+  } catch (err) {
+    console.error(err);
+    setError("Unable to update contract status.");
+  }
+}
+
 function populateContractEditState(contract: Contract) {
   setEditKchNumber(contract.kch_number);
   setEditContractStatus(contract.contract_status);
@@ -705,50 +738,92 @@ function populateMasterAgreementEditState(
 }
 
   return (
-    <main>
+    <div className="app-shell">
       <Toaster position="top-right" />
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+      <Sidebar 
+        activeSection={activeSection}
+        onNavigate={setActiveSection}
+      />
+
+      <main className="app-content">
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
 
       <div className="page-header">
-  <div>
-    <h1>Kings County Hospital Contract Management</h1>
-    <p className="page-subtitle">
-      Manage contracts, master agreements, and upcoming start dates.
-    </p>
+        <div>
+          <h1>
+          {activeSection === "overview" && "Overview"}
+
+          {activeSection === "records" && "Contract Records"}
+
+          {activeSection === "reports" && "Reports"}
+        </h1>
+
+        <p className="page-subtitle">
+          {activeSection === "overview" &&
+            "Monitor contract activity and upcoming start dates."}
+
+          {activeSection === "records" &&
+            "Search, review, and manage contracts and master agreements."}
+
+          {activeSection === "reports" &&
+            "Review contract activity and operational trends."}
+        </p>
+      </div>
+
+    <div className="header-actions">
+      <button
+        type="button"
+        className="button button-primary"
+        onClick={handleOpenCreateContract}
+      >
+        Add Contract
+      </button>
+
+      <button
+        type="button"
+        className="button button-secondary"
+        onClick={handleOpenCreateMasterAgreement}
+      >
+        Add Master Agreement
+      </button>
+    </div>
   </div>
 
-  <div className="header-actions">
-    <button
-      type="button"
-      className="button button-primary"
-      onClick={handleOpenCreateContract}
-    >
-      Add Contract
-    </button>
+    {activeSection === "overview" && (
+      <section className="workspace-panel">
+        <h2>Contract Overview</h2>
 
-    <button
-      type="button"
-      className="button button-secondary"
-      onClick={handleOpenCreateMasterAgreement}
-    >
-      Add Master Agreement
-    </button>
-  </div>
-</div>
+        <DashboardStats
+          totalContracts={totalContracts}
+          activeContracts={activeContracts}
+          startingWithinSixWeeks={startingWithinSixWeeks}
+        />
 
-    <section> 
-      <h2>Contracts</h2>
+        <UpcomingContracts
+          contracts={contracts}
+          onContractClick={(contract) => {
+            const record = combinedRecords.find(
+              (record) =>
+                record.recordType === "Contract" &&
+                record.id === contract.id
+            );
 
-      <DashboardStats
-        totalContracts={totalContracts}
-        activeContracts={activeContracts}
-        startingWithinSixWeeks={startingWithinSixWeeks}
-      />
+            if (record) {
+              handleRecordClick(record);
+            }
+          }}
+        />
+      </section>
+    )}
+
+    {activeSection === "records" && (
+      <section>
+        <h2>Contracts</h2>
 
         <CreateContractModal
           isOpen={showCreateForm}
@@ -787,52 +862,129 @@ function populateMasterAgreementEditState(
           onNotesChange={setNewNotes}
           onCreate={handleCreateContract}
           onClose={handleCloseCreateContract}
-          />
-
-    <CreateMasterAgreementModal
-        isOpen={showMasterAgreementForm}
-        isCreating={isCreatingMasterAgreement}
-        agreementNumber={newAgreementNumber}
-        institution={newMasterInstitution}
-        agreementDate={newAgreementDate}
-        endDate={newMasterEndDate}
-        documentLink={newMasterDocumentLink}
-        notes={newMasterNotes}
-        onAgreementNumberChange={setNewAgreementNumber}
-        onInstitutionChange={setNewMasterInstitution}
-        onAgreementDateChange={setNewAgreementDate}
-        onEndDateChange={setNewMasterEndDate}
-        onDocumentLinkChange={setNewMasterDocumentLink}
-        onNotesChange={setNewMasterNotes}
-        onCreate={handleCreateMasterAgreement}
-        onClose={handleCloseCreateMasterAgreement}
         />
 
-    <ContractFilters
-        searchTerm={searchTerm}
-        departmentFilter={departmentFilter}
-        statusFilter={statusFilter}
-        recordTypeFilter={recordTypeFilter}
-        departments={options?.departments ?? []}
-        contractStatuses={options?.contract_statuses ?? []}
-        onSearchChange={setSearchTerm}
-        onDepartmentChange={setDepartmentFilter}
-        onStatusChange={setStatusFilter}
-        onRecordTypeChange={setRecordTypeFilter}
-        onClear={handleClearFilters}
-          />
+        <CreateMasterAgreementModal
+          isOpen={showMasterAgreementForm}
+          isCreating={isCreatingMasterAgreement}
+          agreementNumber={newAgreementNumber}
+          institution={newMasterInstitution}
+          agreementDate={newAgreementDate}
+          endDate={newMasterEndDate}
+          documentLink={newMasterDocumentLink}
+          notes={newMasterNotes}
+          onAgreementNumberChange={setNewAgreementNumber}
+          onInstitutionChange={setNewMasterInstitution}
+          onAgreementDateChange={setNewAgreementDate}
+          onEndDateChange={setNewMasterEndDate}
+          onDocumentLinkChange={setNewMasterDocumentLink}
+          onNotesChange={setNewMasterNotes}
+          onCreate={handleCreateMasterAgreement}
+          onClose={handleCloseCreateMasterAgreement}
+        />
+
+        <ContractFilters
+          searchTerm={searchTerm}
+          departmentFilter={departmentFilter}
+          statusFilter={statusFilter}
+          recordTypeFilter={recordTypeFilter}
+          departments={options?.departments ?? []}
+          contractStatuses={options?.contract_statuses ?? []}
+          onSearchChange={setSearchTerm}
+          onDepartmentChange={setDepartmentFilter}
+          onStatusChange={setStatusFilter}
+          onRecordTypeChange={setRecordTypeFilter}
+          onClear={handleClearFilters}
+        />
+
+        <div className="view-switcher">
+          <button
+            type="button"
+            className={recordView === "table" ? "active" : ""}
+            onClick={() => setRecordView("table")}
+          >
+            Table
+          </button>
+
+          <button
+            type="button"
+            className={recordView === "board" ? "active" : ""}
+            onClick={() => setRecordView("board")}
+          >
+            Board
+          </button>
+
+          <button
+            type="button"
+            className={recordView === "calendar" ? "active" : ""}
+            onClick={() => setRecordView("calendar")}
+          >
+            Calendar
+          </button>
+        </div>
 
         {isLoadingRecords ? (
           <div className="loading-state">
-              Loading records...
+            Loading records...
           </div>
-      ) : (
-        <RecordsTable
-          records={combinedRecords}
-            onRecordClick={handleRecordClick}
-        />
-      )} 
+        ) : (
+          <>
+            {recordView === "table" && (
+              <RecordsTable
+                records={combinedRecords}
+                onRecordClick={handleRecordClick}
+              />
+            )}
+
+            {recordView === "board" && (
+              <ContractBoard
+                contracts={contracts}
+                onContractClick={(contract) => {
+                  const record = combinedRecords.find(
+                    (record) =>
+                      record.recordType === "Contract" &&
+                      record.id === contract.id
+                  );
+
+                  if (record) {
+                    handleRecordClick(record);
+                  }
+                }}
+                onStatusChange={handleBoardStatusChange}
+              />
+            )}
+
+            {recordView === "calendar" && (
+              <ContractCalendar
+                contracts={contracts}
+                onContractClick={(contract) => {
+                  const record = combinedRecords.find(
+                    (record) =>
+                      record.recordType === "Contract" &&
+                      record.id === contract.id
+                  );
+
+                  if (record) {
+                    handleRecordClick(record);
+                  }
+                }}
+              />
+            )}
+          </>
+        )}
       </section>
+    )}
+
+   {activeSection === "reports" && (
+    <section className="workspace-panel">
+      <h2>Contract Reports</h2>
+
+      <ReportsPanel
+        contracts={contracts}
+        masterAgreements={masterAgreements}
+      />
+    </section>
+  )}
 
       <ContractDetailsModal
         contract={selectedContract}
@@ -900,6 +1052,7 @@ function populateMasterAgreementEditState(
     />
 
     </main>
+  </div>
   );
 }
 
