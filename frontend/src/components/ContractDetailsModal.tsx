@@ -203,7 +203,10 @@ function ContractDetailsModal({
               }
             >
               {options?.contract_types.map((type) => (
-                <option key={type} value={type}>
+                <option
+                  key={type}
+                  value={type}
+                >
                   {type}
                 </option>
               ))}
@@ -276,7 +279,10 @@ function ContractDetailsModal({
               }
             >
               {options?.contract_statuses.map((status) => (
-                <option key={status} value={status}>
+                <option
+                  key={status}
+                  value={status}
+                >
                   {status}
                 </option>
               ))}
@@ -426,12 +432,20 @@ function ContractDetailsModal({
                 {history.map((entry) => (
                   <tr key={entry.id}>
                     <td>{entry.action}</td>
-                    <td>{entry.field_name || "—"}</td>
-                    <td>{entry.old_value || "—"}</td>
-                    <td>{entry.new_value || "—"}</td>
+                    <td>
+                      {entry.field_name || "—"}
+                    </td>
+                    <td>
+                      {entry.old_value || "—"}
+                    </td>
+                    <td>
+                      {entry.new_value || "—"}
+                    </td>
                     <td>{entry.performed_by}</td>
                     <td>
-                      {formatDateTime(entry.performed_at)}
+                      {formatDateTime(
+                        entry.performed_at
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -440,41 +454,49 @@ function ContractDetailsModal({
           </div>
         )}
 
-        {!editMode ? (
-          <button
-            type="button"
-            onClick={onEdit}
-          >
-            Edit Contract
-          </button>
-        ) : (
-          <>
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={onSave}
-            >
-              {isSaving
-                ? "Saving..."
-                : "Save Changes"}
-            </button>
+        <div className="modal-actions">
+          {!editMode ? (
+            <>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={onEdit}
+              >
+                Edit Contract
+              </button>
 
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={onCancel}
-            >
-              Cancel
-            </button>
-          </>
-        )}
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={onClose}
+              >
+                Close
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="button button-primary"
+                disabled={isSaving}
+                onClick={onSave}
+              >
+                {isSaving
+                  ? "Saving..."
+                  : "Save Changes"}
+              </button>
 
-        <button
-          type="button"
-          onClick={onClose}
-        >
-          Close
-        </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                disabled={isSaving}
+                onClick={onCancel}
+              >
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

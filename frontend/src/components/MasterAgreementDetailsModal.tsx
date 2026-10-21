@@ -165,41 +165,49 @@ function MasterAgreementDetailsModal({
           {formatDateTime(agreement.updated_at)}
         </p>
 
-        {!editMode ? (
-          <button
-            type="button"
-            onClick={onEdit}
-          >
-            Edit Master Agreement
-          </button>
-        ) : (
-          <>
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={onSave}
-            >
-              {isSaving
-                ? "Saving..."
-                : "Save Changes"}
-            </button>
+        <div className="modal-actions">
+          {!editMode ? (
+            <>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={onEdit}
+              >
+                Edit Master Agreement
+              </button>
 
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={onCancel}
-            >
-              Cancel
-            </button>
-          </>
-        )}
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={onClose}
+              >
+                Close
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="button button-primary"
+                disabled={isSaving}
+                onClick={onSave}
+              >
+                {isSaving
+                  ? "Saving..."
+                  : "Save Changes"}
+              </button>
 
-        <button
-          type="button"
-          onClick={onClose}
-        >
-          Close
-        </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                disabled={isSaving}
+                onClick={onCancel}
+              >
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

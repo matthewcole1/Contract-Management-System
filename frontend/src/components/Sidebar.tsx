@@ -1,3 +1,5 @@
+import kingsCountyLogo from "../assets/kings-county-logo.jpg";
+
 type SidebarProps = {
   activeSection: "overview" | "records" | "reports";
   onNavigate: (
@@ -12,14 +14,11 @@ function Sidebar({
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <div className="sidebar-logo">
-          KCH
-        </div>
-
-        <div>
-          <h2>KCH Contracts</h2>
-          <p>Contract Management</p>
-        </div>
+        <img
+          src={kingsCountyLogo}
+          alt="NYC Health + Hospitals Kings County"
+          className="sidebar-brand-image"
+        />
       </div>
 
       <nav className="sidebar-nav">
