@@ -84,13 +84,18 @@ contract-management/
     │   ├── types.ts
     │   ├── utils.ts
     │   └── components/
-    │       ├── DashboardStats.tsx
+    │       ├── ContractBoard.tsx
+    │       ├── ContractCalendar.tsx
+    │       ├── ContractDetailsModal.tsx
     │       ├── ContractFilters.tsx
-    │       ├── RecordsTable.tsx
     │       ├── CreateContractModal.tsx
     │       ├── CreateMasterAgreementModal.tsx
-    │       ├── ContractDetailsModal.tsx
-    │       └── MasterAgreementDetailsModal.tsx
+    │       ├── DashboardStats.tsx
+    │       ├── MasterAgreementDetailsModal.tsx
+    │       ├── RecordsTable.tsx
+    │       ├── ReportsPanel.tsx
+    │       ├── Sidebar.tsx
+    │       └── UpcomingContracts.tsx
     ├── package.json
     └── vite.config.ts
 ```
